@@ -422,6 +422,13 @@ const listNFT = async () => {
 // 购买NFT
 const buyNFT = async (listing: MarketListing) => {
   try {
+    console.log('开始购买NFT:', {
+      nftContract: listing.nftContract,
+      tokenId: listing.tokenId,
+      paymentToken: listing.paymentToken,
+      price: listing.price
+    });
+    
     // 确保window.ethereum存在
     if (!window.ethereum) {
       console.error('没有检测到以太坊提供程序')
@@ -430,18 +437,84 @@ const buyNFT = async (listing: MarketListing) => {
     
     const provider = new ethers.BrowserProvider(window.ethereum as any)
     const signer = await provider.getSigner()
+    const signerAddress = await signer.getAddress()
+    console.log('当前账户地址:', signerAddress)
+    
+    // 检查NFT上架信息是否存在且激活
+    const marketContract = new ethers.Contract(MARKET_CONTRACT_ADDRESS, marketABI, provider)
+    const listingInfo = await marketContract.listings(listing.nftContract, listing.tokenId)
+    console.log('NFT上架信息:', {
+      seller: listingInfo.seller,
+      nftContract: listingInfo.nftContract,
+      tokenId: listingInfo.tokenId.toString(),
+      paymentToken: listingInfo.paymentToken,
+      price: ethers.formatEther(listingInfo.price),
+      isActive: listingInfo.isActive
+    })
+    
+    if (!listingInfo.isActive) {
+      console.error('该NFT未上架或已售出')
+      alert('该NFT未上架或已售出')
+      await loadMarketListings() // 刷新市场列表
+      return
+    }
+    
+    // 检查用户是否有足够的代币余额
+    const erc20Contract = new ethers.Contract(listingInfo.paymentToken, erc20ABI, provider)
+    const userBalance = await erc20Contract.balanceOf(signerAddress)
+    const price = listingInfo.price
+    console.log('用户代币余额:', ethers.formatEther(userBalance), 'ETH')
+    console.log('NFT价格:', ethers.formatEther(price), 'ETH')
+    
+    if (userBalance < price) {
+      console.error('余额不足，无法购买')
+      alert(`余额不足，无法购买。需要 ${ethers.formatEther(price)} 代币，但您只有 ${ethers.formatEther(userBalance)}`)
+      return
+    }
     
     // 1. 授权市场合约使用代币
-    const erc20Contract = new ethers.Contract(listing.paymentToken, erc20ABI, signer)
-    const priceInWei = ethers.parseEther(listing.price)
-    const approveTx = await erc20Contract.approve(MARKET_CONTRACT_ADDRESS, priceInWei)
+    console.log('授权市场合约使用代币...')
+    const erc20ContractWithSigner = new ethers.Contract(listingInfo.paymentToken, erc20ABI, signer)
+    const approveTx = await erc20ContractWithSigner.approve(MARKET_CONTRACT_ADDRESS, price)
+    console.log('授权交易已提交:', approveTx.hash)
     await approveTx.wait()
-    console.log("进行购买");
+    console.log('授权交易已确认')
+    
+    // 检查授权是否成功
+    const allowance = await erc20Contract.allowance(signerAddress, MARKET_CONTRACT_ADDRESS)
+    console.log('授权额度:', ethers.formatEther(allowance), 'ETH')
+    
+    if (allowance < price) {
+      console.error('授权失败，授权额度不足')
+      alert('授权失败，请重试')
+      return
+    }
     
     // 2. 调用市场合约购买NFT
-    const marketContract = new ethers.Contract(MARKET_CONTRACT_ADDRESS, marketABI, signer)
-    const buyTx = await marketContract.buyNFT(listing.nftContract, listing.tokenId)
+    console.log('调用buyNFT函数购买NFT...')
+    const marketContractWithSigner = new ethers.Contract(MARKET_CONTRACT_ADDRESS, marketABI, signer)
+    
+    // 开启气体估算的调试
+    const gasEstimate = await marketContractWithSigner.buyNFT.estimateGas(
+      listing.nftContract, 
+      listing.tokenId,
+      { gasLimit: 1000000 } // 增加更高的gas限制
+    )
+    console.log('预估的gas消耗:', gasEstimate.toString())
+
+    const gasLimitValue = Math.ceil(parseInt(gasEstimate.toString()) * 1.5) // 转换为数字并增加50%
+    console.log('设置的gas限制:', gasLimitValue)
+
+    const buyTx = await marketContractWithSigner.buyNFT(
+      listing.nftContract, 
+      listing.tokenId, 
+      { 
+        gasLimit: gasLimitValue
+      }
+    )
+    console.log('购买交易已提交:', buyTx.hash)
     await buyTx.wait()
+    console.log('购买交易已确认')
     
     // 购买成功
     alert('NFT购买成功!')
@@ -452,7 +525,19 @@ const buyNFT = async (listing: MarketListing) => {
     
   } catch (error: any) {
     console.error('购买NFT失败:', error)
-    alert('购买失败: ' + error.message)
+    // 提取更详细的错误信息
+    let errorMessage = error.message || '未知错误'
+    
+    // 检查常见的错误原因
+    if (errorMessage.includes('insufficient funds')) {
+      errorMessage = '钱包中的ETH不足以支付交易费用'
+    } else if (errorMessage.includes('gas required exceeds allowance')) {
+      errorMessage = '所需gas超过了设置的限制，请增加gas限制'
+    } else if (error.code === 'CALL_EXCEPTION') {
+      errorMessage = '合约调用异常，可能是上架信息已失效或权限问题'
+    }
+    
+    alert('购买失败: ' + errorMessage)
   }
 }
 
