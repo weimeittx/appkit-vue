@@ -28,11 +28,11 @@
     <div class="tab-content">
       <!-- 我的NFT页签 -->
       <div v-if="activeTab === 'myNFTs'" class="my-nfts-tab">
-        <h2>我的NFT</h2>
+        <!-- <h2>我的NFT</h2> -->
         <div class="actions-bar">
           <button class="mint-button" @click="openMintModal">铸造新NFT</button>
           <div v-if="isConnected" class="wallet-info">
-            当前钱包: {{ shortenAddress(currentAddress) }}
+            <!-- 当前钱包: {{ shortenAddress(currentAddress) }} -->
           </div>
           <div v-else class="wallet-warning">
             请先连接钱包
@@ -54,7 +54,7 @@
 
       <!-- NFT市场页签 -->
       <div v-if="activeTab === 'market'" class="market-tab">
-        <h2>NFT市场</h2>
+        <!-- <h2>NFT市场</h2> -->
         <p v-if="isLoading">加载中...</p>
         <p v-else-if="marketListings.length === 0">市场暂无上架NFT</p>
         <div v-else class="nft-grid">
@@ -181,9 +181,6 @@ const mintTokenForm = reactive({
 // 示例配置 - 实际使用时需要替换
 const NFT_CONTRACT_ADDRESS = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82' // 替换为实际NFT合约地址
 const MARKET_CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3' // 替换为实际市场合约地址
-
-// 默认ERC20代币地址 - 这是示例地址，需要替换为您的ERC20代币合约地址
-const DEFAULT_ERC20_TOKEN_ADDRESS = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82'
 
 // 获取账户数据
 const accountData = useAppKitAccount()

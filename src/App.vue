@@ -1,10 +1,9 @@
 <template>
   <div class="pages">
-    <h1>AppKit vue Example</h1>
+    <h1>NFT TRADE</h1>
     <appkit-button />
     <ActionButtonList />
-    <button @click="getAddress">获取钱包地址</button>
-    <div v-if="walletAddress">当前钱包地址: {{ walletAddress }}</div>
+    <!-- <div v-if="walletAddress">当前钱包地址: {{ walletAddress }}</div> -->
     
     <!-- 添加NFT市场 -->
     <NFTMarketplace />
@@ -62,14 +61,6 @@ const checkAccount = () => {
   }
 }
 
-const getAddress = () => {
-  // if (accountData.value && accountData.value.address) {
-  //   walletAddress.value = accountData.value.address
-    console.log('钱包地址:', accountData.value.address)
-  // } else {
-  //   console.log('未连接钱包或未获取到地址')
-  // }
-}
 </script>
 
 <style>
