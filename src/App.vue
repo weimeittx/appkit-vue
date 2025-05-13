@@ -59,11 +59,11 @@ const checkAccount = () => {
 }
 
 const getAddress = () => {
-  if (accountData.value && accountData.value.address) {
-    walletAddress.value = accountData.value.address
+  // if (accountData.value && accountData.value.address) {
+  //   walletAddress.value = accountData.value.address
     console.log('钱包地址:', accountData.value.address)
-  } else {
-    console.log('未连接钱包或未获取到地址')
-  }
+  // } else {
+  //   console.log('未连接钱包或未获取到地址')
+  // }
 }
 </script>
