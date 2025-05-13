@@ -5,6 +5,9 @@
     <ActionButtonList />
     <button @click="getAddress">获取钱包地址</button>
     <div v-if="walletAddress">当前钱包地址: {{ walletAddress }}</div>
+    
+    <!-- 添加NFT市场 -->
+    <NFTMarketplace />
   </div>
 </template>
 
@@ -17,6 +20,7 @@ import { ethersAdapter, networks, projectId } from './config/index'
 import { ref, onMounted } from 'vue'
 
 import ActionButtonList from "./components/ActionButton.vue"
+import NFTMarketplace from "./components/NFTMarketplace.vue"
 
 // 创建响应式变量存储钱包地址
 const walletAddress = ref('')
@@ -67,3 +71,11 @@ const getAddress = () => {
   // }
 }
 </script>
+
+<style>
+.pages {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+</style>
