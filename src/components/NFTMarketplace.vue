@@ -15,9 +15,14 @@
           NFT市场
         </div>
       </div>
-      <button class="refresh-button" @click="refreshData" title="刷新数据">
-        🔄 刷新
-      </button>
+      <div class="action-buttons">
+        <button class="mint-token-button" @click="openMintTokenModal" title="铸造ERC20代币">
+          💰 铸造代币
+        </button>
+        <button class="refresh-button" @click="refreshData" title="刷新数据">
+          🔄 刷新
+        </button>
+      </div>
     </div>
 
     <div class="tab-content">
@@ -105,6 +110,28 @@
         </div>
       </div>
     </div>
+
+    <!-- 铸造ERC20代币弹窗 -->
+    <div v-if="showMintTokenModal" class="modal">
+      <div class="modal-content">
+        <h3>铸造ERC20代币</h3>
+        
+        <div class="form-group">
+          <label>ERC20合约地址:</label>
+          <input v-model="mintTokenForm.contractAddress" placeholder="输入ERC20代币合约地址" />
+        </div>
+        
+        <div class="form-group">
+          <label>代币数量:</label>
+          <input v-model="mintTokenForm.amount" placeholder="输入要铸造的代币数量" type="number" />
+        </div>
+        
+        <div class="modal-buttons">
+          <button @click="mintERC20Token">确认铸造</button>
+          <button @click="showMintTokenModal = false">取消</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -137,6 +164,7 @@ const myNFTs = ref<NFTItem[]>([])
 const marketListings = ref<MarketListing[]>([])
 const showListModal = ref(false)
 const showMintModal = ref(false)
+const showMintTokenModal = ref(false)
 const selectedNFT = ref<NFTItem | null>(null)
 const listingForm = reactive({
   paymentToken: '',
@@ -145,10 +173,17 @@ const listingForm = reactive({
 const mintForm = reactive({
   tokenId: ''
 })
+const mintTokenForm = reactive({
+  contractAddress: '',
+  amount: ''
+})
 
 // 示例配置 - 实际使用时需要替换
 const NFT_CONTRACT_ADDRESS = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82' // 替换为实际NFT合约地址
 const MARKET_CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3' // 替换为实际市场合约地址
+
+// 默认ERC20代币地址 - 这是示例地址，需要替换为您的ERC20代币合约地址
+const DEFAULT_ERC20_TOKEN_ADDRESS = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82'
 
 // 获取账户数据
 const accountData = useAppKitAccount()
@@ -563,6 +598,73 @@ const refreshData = async () => {
     marketListings.value = []
   }
 }
+
+// 打开铸造代币弹窗
+const openMintTokenModal = () => {
+  if (!isConnected.value) {
+    alert('请先连接钱包')
+    return
+  }
+  showMintTokenModal.value = true
+}
+
+// 铸造ERC20代币
+const mintERC20Token = async () => {
+  try {
+    if (!mintTokenForm.contractAddress || !mintTokenForm.amount || Number(mintTokenForm.amount) <= 0) {
+      alert('请输入有效的ERC20合约地址和代币数量')
+      return
+    }
+    
+    if (!isConnected.value) {
+      alert('请先连接钱包')
+      return
+    }
+    
+    // 确保window.ethereum存在
+    if (!window.ethereum) {
+      console.error('没有检测到以太坊提供程序')
+      return
+    }
+    
+    const amount = ethers.parseEther(`${mintTokenForm.amount}`)
+    console.log('准备铸造代币:', {
+      address: currentAddress.value,
+      amount: mintTokenForm.amount,
+      amountInWei: amount.toString()
+    })
+    
+    const provider = new ethers.BrowserProvider(window.ethereum as any)
+    const signer = await provider.getSigner()
+    
+    // 调用ERC20合约的mint方法
+    const erc20Contract = new ethers.Contract(mintTokenForm.contractAddress, erc20ABI, signer)
+    
+    // 检查合约是否有mint方法
+    if (!erc20Contract.mint) {
+      console.error('合约没有mint方法')
+      alert('该ERC20合约不支持直接铸造，请联系管理员')
+      return
+    }
+    
+    // 铸造代币
+    const mintTx = await erc20Contract.mint(currentAddress.value, amount)
+    console.log('铸造交易已提交:', mintTx.hash)
+    
+    await mintTx.wait()
+    console.log('铸造交易已确认')
+    
+    // 铸造成功
+    alert('代币铸造成功!')
+    showMintTokenModal.value = false
+    mintTokenForm.contractAddress = ''
+    mintTokenForm.amount = ''
+    
+  } catch (error: any) {
+    console.error('铸造代币失败:', error)
+    alert('铸造失败: ' + error.message)
+  }
+}
 </script>
 
 <style scoped>
@@ -577,6 +679,11 @@ const refreshData = async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .tabs {
@@ -594,7 +701,7 @@ const refreshData = async () => {
   font-weight: bold;
 }
 
-.refresh-button {
+.refresh-button, .mint-token-button {
   padding: 5px 10px;
   background-color: #f5f5f5;
   border: 1px solid #ddd;
@@ -602,8 +709,18 @@ const refreshData = async () => {
   cursor: pointer;
 }
 
-.refresh-button:hover {
+.refresh-button:hover, .mint-token-button:hover {
   background-color: #e5e5e5;
+}
+
+.mint-token-button {
+  background-color: #4caf50;
+  color: white;
+  border-color: #45a049;
+}
+
+.mint-token-button:hover {
+  background-color: #45a049;
 }
 
 .actions-bar {
