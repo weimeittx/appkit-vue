@@ -62,6 +62,7 @@
             <div class="nft-image">NFT #{{ listing.tokenId }}</div>
             <div class="nft-info">
               <div class="nft-title">NFT #{{ listing.tokenId }}</div>
+              <div class="nft-price">erc20: {{ shortenAddress(listing.paymentToken) }} </div>
               <div class="nft-price">价格: {{ listing.price }} {{ getTokenSymbol(listing.paymentToken) }}</div>
               <div class="nft-seller">卖家: {{ shortenAddress(listing.seller) }}</div>
               <div class="nft-action">点击购买</div>
