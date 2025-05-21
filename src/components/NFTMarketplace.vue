@@ -180,8 +180,8 @@ const mintTokenForm = reactive({
 })
 
 // 示例配置 - 实际使用时需要替换
-const NFT_CONTRACT_ADDRESS = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82' // 替换为实际NFT合约地址
-const MARKET_CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3' // 替换为实际市场合约地址
+const NFT_CONTRACT_ADDRESS = '0x4826533B4897376654Bb4d4AD88B7faFD0C98528' // 替换为实际NFT合约地址
+const MARKET_CONTRACT_ADDRESS = '0x998abeb3E57409262aE5b751f60747921B33613E' // 替换为实际市场合约地址
 
 // 获取账户数据
 const accountData = useAppKitAccount()
@@ -421,6 +421,7 @@ const listNFT = async () => {
     const provider = new ethers.BrowserProvider(window.ethereum as any)
     const signer = await provider.getSigner()
     
+    //TODO 使用 离线签名
     // 1. 首先授权市场合约操作NFT
     const nftContract = new ethers.Contract(selectedNFT.value.contractAddress, erc721ABI, signer)
     const approveNFTTx = await nftContract.approve(MARKET_CONTRACT_ADDRESS, selectedNFT.value.tokenId)
@@ -506,6 +507,7 @@ const buyNFT = async (listing: MarketListing) => {
     }
     
     // 1. 授权市场合约使用代币
+    //TODO 使用 离线签名
     console.log('授权市场合约使用代币...')
     const erc20ContractWithSigner = new ethers.Contract(listingInfo.paymentToken, erc20ABI, signer)
     const approveTx = await erc20ContractWithSigner.approve(MARKET_CONTRACT_ADDRESS, price)
